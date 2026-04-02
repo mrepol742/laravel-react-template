@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react'
-import { createRoot } from 'react-dom/client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
-import Home from './src/home'
+import Home from './views/home'
+import './scss/style.scss'
 
 const App = () => {
     return (

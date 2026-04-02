@@ -1,30 +1,27 @@
-import { defineConfig } from 'vite';
-import laravel from 'laravel-vite-plugin';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import laravel from 'laravel-vite-plugin'
+import react from '@vitejs/plugin-react'
+import htmlMinifier from 'vite-plugin-html-minifier'
+import path from 'node:path'
+import autoprefixer from 'autoprefixer'
 
 export default defineConfig({
-    plugins: [
-        laravel({
-            input: [
-                'resources/sass/app.scss', 
-                'resources/js/app.js',
-                'resources/react/index.jsx',
-            ],
-            refresh: true,
-        }),
-        react(),
-    ],
-      build: {
+    base: '/',
+    build: {
         outDir: 'public/build',
         chunkSizeWarningLimit: 800,
         minify: 'terser',
         sourcemap: false,
-        terserOptions: {
-            compress: {
-                drop_console: true,
-            },
-        },
         rollupOptions: {
+            input: {
+                app: path.resolve(__dirname, 'resources/react/index.jsx'),
+            },
+            onwarn(warning, warn) {
+                if (warning.plugin === 'vite:esbuild') {
+                    throw new Error(`Vite ESBuild error: ${warning.message}`)
+                }
+                warn(warning)
+            },
             output: {
                 entryFileNames: 'assets/[hash].js',
                 chunkFileNames: 'assets/[hash].js',
@@ -38,10 +35,52 @@ export default defineConfig({
             },
         },
     },
-     server: {
-        cors: {
-            origin: ['http://127.0.0.1:8000', 'http://localhost:8000'],
-            credentials: true,
+    css: {
+        postcss: {
+            plugins: [
+                autoprefixer({}), // add options if needed
+            ],
+            sass: {
+                sassOptions: {
+                    quietDeps: true,
+                },
+            },
         },
     },
-});
+    esbuild: {
+        loader: 'jsx',
+        include: /resources\/.*\.jsx?$/,
+        exclude: [],
+    },
+    optimizeDeps: {
+        force: true,
+        rolldownOptions: {
+            moduleTypes: {
+                '*.jsx': 'js',
+            },
+        },
+    },
+    plugins: [
+        react(),
+        htmlMinifier({
+            collapseWhitespace: true,
+            removeComments: true,
+            removeRedundantAttributes: true,
+            useShortDoctype: true,
+        }),
+        laravel({
+            input: [],
+            refresh: true,
+        }),
+    ],
+    server: {
+        host: 'localhost',
+        port: 5173,
+        strictPort: true,
+        cors: true,
+        headers: {
+            'Cross-Origin-Opener-Policy': 'same-origin',
+            'Cross-Origin-Embedder-Policy': 'require-corp',
+        },
+    },
+})
